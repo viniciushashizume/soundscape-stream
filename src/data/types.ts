@@ -6,6 +6,7 @@ export interface Music {
   author: Artist;
   isPlaying: boolean;
   playSong?(): void;
+  searchMusic?(musicName: string): void;
 }
 
 export interface Album {
@@ -51,6 +52,20 @@ export class Song implements Music {
   public playSong(): void {
     this.isPlaying = true;
     console.log(`Musica: ${this.name} tocando.`);
+  }
+
+  
+  public searchMusic(musicName: string): Music | undefined {
+    const q = musicName.toLowerCase();
+    const musicFound = AllMusics.find(m => m.name.toLowerCase() === q);
+    
+    if (musicFound) {
+      console.log(`[Back-end Classe] Sucesso: ${musicFound.name} encontrada.`);
+      return musicFound;
+    }
+    
+    console.log(`[Back-end Classe] Erro: "${musicName}" não encontrada.`);
+    return undefined;
   }
 }
 

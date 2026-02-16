@@ -1,21 +1,32 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { AllMusics, AllArtists, AllAlbums } from '@/data/mockData';
+import { Song, Music } from '@/data/types';
 import TrackList from '@/components/TrackList';
 import { Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const SearchPage = () => {
   const [query, setQuery] = useState('');
+  // Estado para armazenar o retorno da sua classe Song
+  const [searchResult, setSearchResult] = useState<Music | undefined>(undefined);
 
-  const results = useMemo(() => {
-    if (!query.trim()) return null;
-    const q = query.toLowerCase();
-    return {
-      tracks: AllMusics.filter(m => m.name.toLowerCase().includes(q) || m.author.name.toLowerCase().includes(q)),
-      artists: AllArtists.filter(a => a.name.toLowerCase().includes(q)),
-      albums: AllAlbums.filter(a => a.name.toLowerCase().includes(q) || a.author.name.toLowerCase().includes(q)),
-    };
-  }, [query]);
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+
+    if (value.trim() && AllMusics.length > 0) {
+      // Usamos a primeira instância disponível para acessar o método da classe
+      const songInstance = AllMusics[0] as Song;
+      
+      // Chamada da sua função de back-end
+      const result = songInstance.searchMusic(value);
+      
+      // Atualiza o front-end com o que a classe retornou
+      setSearchResult(result);
+    } else {
+      setSearchResult(undefined);
+    }
+  };
 
   return (
     <div className="p-6 h-full overflow-auto">
@@ -23,14 +34,15 @@ const SearchPage = () => {
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
-          placeholder="O que você quer ouvir?"
+          placeholder="Digite o nome exato da música..."
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={handleSearch}
           className="w-full pl-10 pr-4 py-3 rounded-full bg-accent text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
-      {!results && (
+      {/* Se não houver busca, mostra os gêneros (layout original) */}
+      {!query && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {['Rock', 'Metal', 'Clássico', 'Blues', 'Jazz', 'Pop'].map(genre => (
             <div key={genre} className="aspect-square rounded-lg bg-gradient-to-br from-primary/40 to-accent flex items-end p-4">
@@ -40,42 +52,19 @@ const SearchPage = () => {
         </div>
       )}
 
-      {results && (
+      {/* Se houver busca, mostra apenas o que a classe Song encontrar */}
+      {query && (
         <>
-          {results.artists.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold mb-3 text-foreground">Artistas</h2>
-              <div className="flex gap-4 overflow-x-auto">
-                {results.artists.map(a => (
-                  <Link key={a.id} to={`/artist/${a.id}`} className="shrink-0 p-3 rounded-lg bg-card hover:bg-accent transition-colors w-36 text-center">
-                    <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-2 flex items-center justify-center text-2xl text-muted-foreground">{a.name[0]}</div>
-                    <p className="text-sm font-medium truncate text-foreground">{a.name}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          {results.albums.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold mb-3 text-foreground">Álbuns</h2>
-              <div className="flex gap-4 overflow-x-auto">
-                {results.albums.map(a => (
-                  <Link key={a.id} to={`/album/${a.id}`} className="shrink-0 p-3 rounded-lg bg-card hover:bg-accent transition-colors w-36">
-                    <div className="w-full aspect-square rounded bg-muted mb-2 flex items-center justify-center text-2xl text-muted-foreground">💿</div>
-                    <p className="text-sm font-medium truncate text-foreground">{a.name}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          {results.tracks.length > 0 && (
+          {searchResult ? (
             <div>
-              <h2 className="text-lg font-bold mb-3 text-foreground">Músicas</h2>
-              <TrackList tracks={results.tracks} />
+              <h2 className="text-lg font-bold mb-3 text-foreground">Resultado da Classe Song</h2>
+              {/* Passamos o resultado dentro de um array para o TrackList */}
+              <TrackList tracks={[searchResult]} />
             </div>
-          )}
-          {results.tracks.length === 0 && results.artists.length === 0 && results.albums.length === 0 && (
-            <p className="text-muted-foreground">Nenhum resultado para "{query}"</p>
+          ) : (
+            <p className="text-muted-foreground">
+              A função searchMusic() não encontrou correspondência exata para "{query}".
+            </p>
           )}
         </>
       )}
